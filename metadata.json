@@ -1,0 +1,8 @@
+{
+  "name": "Job Matcher",
+  "description": "Système expert de matching d\u0027emploi à 100%, d\u0027apprentissage continu et de génération de candidatures à Lausanne et Vaud.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
