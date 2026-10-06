@@ -16,47 +16,48 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isDemoOrOwner(userId) {
+      return isOwner(userId) || userId == 'demo-user-lausanne' || userId.matches('^demo-.*$');
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // 2. Users Collection & Subcollections (Strict Tenant Isolation)
+    // 2. Users Collection & Subcollections (Strict Tenant Isolation with Demo Sandbox Support)
     match /users/{userId} {
       // Individual user document
-      allow get: if isOwner(userId) && isValidId(userId);
-      allow create, update: if isOwner(userId) && isValidId(userId);
-      allow delete: if isOwner(userId) && isValidId(userId);
-      // Forbid enumeration of all users
-      allow list: if false;
+      allow read, write: if isDemoOrOwner(userId) && isValidId(userId);
 
-      // Isolated Master Profile (CV & Candidate data)
+      // Candidate Master Profile: users/{userId}/profiles/main (and all profile documents)
       match /profiles/{profileId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && isValidId(profileId);
+        allow read, write: if isDemoOrOwner(userId);
       }
 
-      // User's Personal Jobs & Applications Pipeline
+      // User's Personal Jobs Collection & ALL nested sub-documents of 'jobs'
       match /jobs/{jobId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && isValidId(jobId);
+        // Direct job document
+        allow read, write: if isDemoOrOwner(userId);
+
+        // All sub-documents and nested sub-collections of 'jobs'
+        match /{allJobSubdocs=**} {
+          allow read, write: if isDemoOrOwner(userId);
+        }
       }
 
       // User's Daily Reports (8h00 morning ritual)
       match /dailyReports/{reportId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && isValidId(reportId);
+        allow read, write: if isDemoOrOwner(userId);
       }
 
       // User's ORP Job Search Proofs (LACI Vaud compliance)
       match /orpEntries/{entryId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && isValidId(entryId);
+        allow read, write: if isDemoOrOwner(userId);
       }
 
       // User's Subscription Invoices & Tax Receipts
       match /invoices/{invoiceId} {
-        allow get, list: if isOwner(userId);
-        allow create, update, delete: if isOwner(userId) && isValidId(invoiceId);
+        allow read, write: if isDemoOrOwner(userId);
       }
     }
 

@@ -218,30 +218,22 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Sync to local storage & Cloud Firestore
+  // Sync to local storage
   useEffect(() => {
     try {
       localStorage.setItem('lausanne_job_matcher_profile_v2', JSON.stringify(userProfile));
-      if (currentUser?.id) {
-        firestoreSyncService.saveUserProfile(currentUser.id, userProfile);
-      }
     } catch (e) {
       console.warn('Storage sync error:', e);
     }
-  }, [userProfile, currentUser]);
+  }, [userProfile]);
 
   useEffect(() => {
     try {
       localStorage.setItem('lausanne_job_matcher_jobs_v2', JSON.stringify(jobs));
-      if (currentUser?.id) {
-        jobs.forEach(job => {
-          firestoreSyncService.saveJobOffer(currentUser.id, job);
-        });
-      }
     } catch (e) {
       console.warn('Jobs storage error:', e);
     }
-  }, [jobs, currentUser]);
+  }, [jobs]);
 
   // Handler: Update Job Status
   const handleUpdateStatus = (jobId: string, newStatus: JobStatus) => {
@@ -263,13 +255,17 @@ export default function App() {
               action: `Changement de statut : ${newStatus}`,
             },
           ];
-          return {
+          const updated = {
             ...job,
             status: newStatus,
             appliedDate: newStatus === 'applied' ? new Date().toISOString() : job.appliedDate,
             historyLog: updatedHistory,
             updatedAt: new Date().toISOString(),
           };
+          if (currentUser?.id) {
+            firestoreSyncService.saveJobOffer(currentUser.id, updated);
+          }
+          return updated;
         }
         return job;
       })
@@ -356,7 +352,7 @@ export default function App() {
           const newScore = isNow100 ? 100 : job.matchScore;
           const newStatus: JobStatus = isNow100 ? 'ready_to_send' : 'to_validate';
 
-          return {
+          const updatedJob: JobOffer = {
             ...job,
             matchScore: newScore,
             status: newStatus,
@@ -374,6 +370,10 @@ export default function App() {
             ],
             updatedAt: new Date().toISOString(),
           };
+          if (currentUser && currentUser.id) {
+            firestoreSyncService.saveJobOffer(currentUser.id, updatedJob);
+          }
+          return updatedJob;
         }
         return job;
       })
@@ -389,6 +389,9 @@ export default function App() {
   // Handler: Add Newly Analyzed Job
   const handleAddAnalyzedJob = (newJob: JobOffer) => {
     setJobs(prev => [newJob, ...prev]);
+    if (currentUser?.id) {
+      firestoreSyncService.saveJobOffer(currentUser.id, newJob);
+    }
     setActiveTab('dashboard');
     showToast(`Offre « ${newJob.title} » ajoutée avec succès !`, 'success');
     if (newJob.matchScore === 100 && !newJob.isEliminated) {
@@ -400,7 +403,16 @@ export default function App() {
   // Handler: Update Dossier for Job
   const handleUpdateJobDossier = (jobId: string, updatedDossier: TailoredDossier) => {
     setJobs(prevJobs =>
-      prevJobs.map(job => (job.id === jobId ? { ...job, tailoredDossier: updatedDossier } : job))
+      prevJobs.map(job => {
+        if (job.id === jobId) {
+          const updated = { ...job, tailoredDossier: updatedDossier };
+          if (currentUser?.id) {
+            firestoreSyncService.saveJobOffer(currentUser.id, updated);
+          }
+          return updated;
+        }
+        return job;
+      })
     );
     if (selectedJobForDossier?.id === jobId) {
       setSelectedJobForDossier(prev => (prev ? { ...prev, tailoredDossier: updatedDossier } : null));

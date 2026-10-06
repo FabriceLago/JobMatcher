@@ -22,7 +22,9 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
+  disableNetwork,
+  enableNetwork
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -33,6 +35,16 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Immediately disable Firestore network if quota is exhausted to prevent background polling & backoff errors
+if (typeof window !== 'undefined') {
+  const isPreviouslyExhausted =
+    window.sessionStorage.getItem('firestore_quota_exhausted') === 'true' ||
+    window.localStorage.getItem('firestore_quota_exhausted') === 'true';
+  if (isPreviouslyExhausted) {
+    disableNetwork(db).catch(() => {});
+  }
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -61,8 +73,23 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  const isQuotaExhausted = errMsg.includes('resource-exhausted') || errMsg.includes('Quota limit exceeded');
+
+  if (isQuotaExhausted) {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('firestore_quota_exhausted', 'true');
+      window.localStorage.setItem('firestore_quota_exhausted', 'true');
+      window.dispatchEvent(new CustomEvent('firestore-quota-change', { detail: { isQuotaExhausted: true } }));
+    }
+    // Shut down background polling and backoff retries in Firestore SDK
+    disableNetwork(db).catch(() => {});
+    console.warn('[Firestore] Quota quotidien de la base de données atteint. Basculement automatique en mode local-first sécurisé (localStorage).');
+    return;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -77,8 +104,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore notice: ', JSON.stringify(errInfo));
 }
 
 // Connection test as required by Firebase skill

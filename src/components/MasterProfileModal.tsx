@@ -76,13 +76,15 @@ export const MasterProfileModal: React.FC<MasterProfileModalProps> = ({
   };
 
   const handleExportJSON = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(profile, null, 2));
+    const blob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `cv-maitre-lausanne-${Date.now()}.json`);
+    downloadAnchor.href = url;
+    downloadAnchor.download = `cv-maitre-lausanne-${Date.now()}.json`;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (

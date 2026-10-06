@@ -18,12 +18,17 @@ import {
   X,
   Radar,
   Award,
-  FileCheck2
+  FileCheck2,
+  Cloud,
+  AlertTriangle,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { JobOffer, UserProfile } from '../types';
 import { UserAccount, calculateTrialDaysRemaining } from '../types/auth';
 import { PWAInstallButton } from './PWAInstallButton';
 import { ThemeToggle } from './ThemeToggle';
+import { useFirestoreSyncStatus } from '../services/firestoreSyncService';
 
 interface HeaderProps {
   activeTab: 'dashboard' | 'analyzer' | 'radar' | 'optionB' | 'dossier' | 'report' | 'profile' | 'coaching' | 'orp';
@@ -60,6 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
   const waitingOptionBCount = jobs.filter(j => j.status === 'waiting_info').length;
   const learnedCount = userProfile.learnedSkills.length;
   const trialInfo = calculateTrialDaysRemaining(currentUser.trialExpiresAt);
+  const firestoreStatus = useFirestoreSyncStatus(currentUser?.id);
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-40 backdrop-blur-md bg-opacity-95 shadow-lg">
@@ -77,10 +83,52 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-slate-600 hidden sm:inline">•</span>
           <span className="text-amber-300 hidden md:inline">Salaire : Option C (À discuter)</span>
           <span className="text-slate-600 hidden lg:inline">•</span>
-          <div className="hidden lg:flex items-center gap-1.5 bg-emerald-950/70 border border-emerald-800/60 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Cloud Multi-tenant (Firebase)</span>
-          </div>
+
+          {/* Dynamic Firestore Connection & Quota Warning Indicator */}
+          {firestoreStatus.status === 'quota_exhausted' ? (
+            <div
+              className="flex items-center gap-1.5 bg-amber-950/90 border border-amber-500/80 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full font-semibold shadow-sm animate-pulse cursor-help"
+              title="Avertissement Quota : Le quota d'écriture gratuit journalier de Firebase est atteint. Mode Local-First activé : toutes vos candidatures et modifications sont enregistrées en local sans interruption."
+            >
+              <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Quota Cloud Atteint (Mode Local-First Actif)</span>
+            </div>
+          ) : firestoreStatus.status === 'syncing' ? (
+            <div
+              className="flex items-center gap-1.5 bg-blue-950/70 border border-blue-600/60 text-blue-300 text-[10px] px-2.5 py-0.5 rounded-full font-medium"
+              title="Synchronisation en cours avec Google Cloud Firestore..."
+            >
+              <RefreshCw className="w-3 h-3 text-blue-400 animate-spin shrink-0" />
+              <span>Synchro Cloud...</span>
+            </div>
+          ) : firestoreStatus.status === 'demo_local' ? (
+            <div
+              className="hidden sm:flex items-center gap-1.5 bg-indigo-950/70 border border-indigo-700/60 text-indigo-300 text-[10px] px-2.5 py-0.5 rounded-full font-medium cursor-help"
+              title="Session Démo : Vos données sont conservées en local sans compte requis."
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+              <span>Session Démo (Stockage Local)</span>
+            </div>
+          ) : firestoreStatus.status === 'offline' ? (
+            <div
+              className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 text-slate-400 text-[10px] px-2.5 py-0.5 rounded-full font-medium"
+              title="Réseau hors-ligne. Le cache PWA sécurise vos actions."
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+              <span>Hors-Ligne (Cache Actif)</span>
+            </div>
+          ) : (
+            <div
+              className="hidden lg:flex items-center gap-1.5 bg-emerald-950/70 border border-emerald-800/60 text-emerald-300 text-[10px] px-2.5 py-0.5 rounded-full font-medium cursor-help"
+              title={`Cloud Firestore connecté et synchronisé en temps réel.${firestoreStatus.lastSyncTime ? ` Dernière synchro : ${firestoreStatus.lastSyncTime}` : ''}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Cloud Firestore Connecté</span>
+              {firestoreStatus.lastSyncTime && (
+                <span className="text-emerald-400/80 text-[9px]">({firestoreStatus.lastSyncTime})</span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -460,6 +508,21 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Quota Exhaustion / Warning Alert Banner */}
+      {firestoreStatus.status === 'quota_exhausted' && (
+        <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 border-t border-amber-600/60 px-4 py-2 text-xs text-amber-200 flex items-center justify-between gap-3 shadow-inner">
+          <div className="flex items-center gap-2 max-w-5xl">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-[11px] leading-tight">
+              <strong>Quota Cloud Atteint :</strong> Le quota quotidien gratuit de requêtes Firestore de votre projet a été atteint pour aujourd'hui. L'application bascule automatiquement en <strong>mode Local-First sécurisé (localStorage)</strong> : toutes vos candidatures, notes et profils restent 100% enregistrés et fonctionnels.
+            </span>
+          </div>
+          <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md font-mono shrink-0 hidden sm:inline">
+            Local-First Actif
+          </span>
         </div>
       )}
     </header>
