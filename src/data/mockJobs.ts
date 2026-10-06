@@ -3,7 +3,7 @@ import { JobOffer } from '../types';
 export const initialMockJobs: JobOffer[] = [
   {
     id: 'job-epfl-001',
-    url: 'https://recrutement.epfl.ch/position/chef-de-projet-si-recherche-lausanne',
+    url: 'https://jobs.epfl.ch',
     title: 'Chef de Projet SI & Gouvernance Digitale',
     company: 'EPFL (École Polytechnique Fédérale de Lausanne)',
     location: 'Lausanne (Ecublens)',
@@ -21,9 +21,9 @@ export const initialMockJobs: JobOffer[] = [
       'Ce poste à l’EPFL correspond exactement à votre profil : pilotage de programmes IT complexes, maîtrise conjointe PMP/Agile et familiarité avec le tissu d’innovation vaudois. L’environnement académique de rang mondial valorisera pleinement votre sens du service public et votre expérience BCV/Nestlé.',
     actionChannel: {
       type: 'url',
-      target: 'https://recrutement.epfl.ch/position/chef-de-projet-si-recherche-lausanne',
-      contactName: 'Service des Ressources Humaines EPFL - VPI Informatique',
-      notes: 'Formulaire de postulation direct en ligne EPFL (sans intermédiaire)'
+      target: 'https://jobs.epfl.ch',
+      contactName: 'Mme Céline Favre — Service des Ressources Humaines EPFL',
+      notes: 'Portail officiel des offres d’emploi de l’EPFL (Lausanne Ecublens) — Postulation directe vérifiée'
     },
     jobLanguage: 'FR',
     rawText: `L'EPFL recherche pour sa Vice-présidence des Systèmes d'Information un(e) Chef de Projet SI & Gouvernance Digitale à 80%-100% en CDI sur le campus d'Ecublens (Lausanne).
@@ -90,7 +90,7 @@ Avenue de Rumine 24
 contact@candidat.ch | +41 79 000 00 00
 
 École Polytechnique Fédérale de Lausanne (EPFL)
-À l'attention de Mme Céline Favre, Responsable Recrutement & Talents RH
+À l'attention de Mme Céline Favre, Responsable Recrutement & Talents SI
 Route Cantonale, 1015 Lausanne (Ecublens)
 
 Objet : Candidature au poste de Chef de Projet SI & Gouvernance Digitale (Réf: EPFL-VPI-2026)
@@ -133,7 +133,7 @@ Chef de Projet SI Senior
       {
         timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
         action: 'Création & Analyse initiale',
-        details: 'Score 100% calculé avec succès. Aucun critère manquant.'
+        details: 'Score 100% calculé avec succès. Lien officiel EPFL vérifié (jobs.epfl.ch).'
       }
     ],
     createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
@@ -141,10 +141,12 @@ Chef de Projet SI Senior
   },
   {
     id: 'job-vaudoise-002',
-    url: 'https://carrieres.vaudoise.ch/jobs/project-manager-transformation-digitale-lausanne',
+    url: 'https://www.vaudoise.ch/fr/carrieres/travailler-a-la-vaudoise/professionnels-et-jeunes-diplomes',
     title: 'Project Manager Transformation Digitale & Sinistres',
     company: 'Vaudoise Assurances',
     location: 'Lausanne (Place de la Navigation)',
+    recruiterName: 'M. Alexandre Rochat',
+    recruiterTitle: 'Responsable Recrutement & Talents RH',
     contractType: 'CDI',
     activityRateMin: 80,
     activityRateMax: 100,
@@ -156,10 +158,10 @@ Chef de Projet SI Senior
     theWhy:
       'Une opportunité de tout premier plan au siège historique de la Vaudoise Assurances au bord du lac Léman. Votre double compétence en gouvernance de projets bancaires vaudois et gestion du changement garantit une intégration naturelle, conditionnée à la validation de l’Option B sur les processus métiers assurances.',
     actionChannel: {
-      type: 'email',
-      target: 'mailto:recrutement@vaudoise.ch?subject=Candidature%20Project%20Manager%20Transformation%20Digitale',
-      contactName: 'Service Recrutement & Talent Acquisition',
-      notes: 'Envoi direct au service RH Vaudoise Assurances'
+      type: 'url',
+      target: 'https://www.vaudoise.ch/fr/carrieres/travailler-a-la-vaudoise/professionnels-et-jeunes-diplomes',
+      contactName: 'M. Alexandre Rochat — Direction RH Vaudoise Assurances',
+      notes: 'Portail carrières officiel Vaudoise Assurances (Lausanne Ouchy) — Page vérifiée'
     },
     jobLanguage: 'FR',
     rawText: `La Vaudoise Assurances recherche pour son siège à Lausanne un(e) Project Manager Transformation Digitale & Sinistres à 80%-100% en CDI.
@@ -212,6 +214,61 @@ Votre profil :
         userResponse: undefined
       }
     ],
+    tailoredDossier: {
+      language: 'FR',
+      generatedAt: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
+      tailoredCV: {
+        headline: 'Project Manager Transformation Digitale & Services Financiers',
+        summary:
+          'Chef de projet senior vaudois fort de 8 ans de pilotage de transformations numériques bancaires et assurantielles. Expert en gouvernance agile, relations éditeurs et conduite du changement bilingue français-allemand.',
+        reorderedExperienceIds: ['exp-1', 'exp-2', 'exp-3'],
+        highlightedSkills: [
+          'Gouvernance Agile & Scrum',
+          'Gestion Budgétaire & Sinistres',
+          'Conduite du changement bilingue FR/DE',
+          'Relation éditeurs ERP / Core systems'
+        ],
+        salaryMention: 'À discuter (Option C - selon grille Vaudoise Assurances)'
+      },
+      motivationLetter: `Marc Delarue
+Avenue de Rumine 24
+1005 Lausanne
+contact@candidat.ch | +41 79 000 00 00
+
+Vaudoise Assurances
+À l'attention de M. Alexandre Rochat, Responsable Recrutement & Talents RH
+Place de la Navigation 9, 1001 Lausanne
+
+Objet : Candidature au poste de Project Manager Transformation Digitale & Sinistres
+
+Monsieur Rochat,
+
+Attentif au dynamisme de la Vaudoise Assurances et à sa position d'acteur incontournable du paysage vaudois, c'est avec un vif intérêt que je vous présente ma candidature au poste de Project Manager Transformation Digitale & Sinistres à votre siège d'Ouchy.
+
+Fort de huit années de pilotage de projets informatiques et organisationnels au sein d'institutions financières de premier plan (Banque Cantonale Vaudoise, Nestlé), j'ai conduit des chantiers majeurs d'optimisation des flux métiers et de modernisation applicative. Ma pratique quotidienne de la gestion des parties prenantes, combinée à une rigueur budgétaire sans faille et une aisance relationnelle en français et allemand, me permet de fédérer efficacement les équipes métiers, techniques et partenaires externes.
+
+Rejoindre la Vaudoise Assurances représente pour moi l'opportunité de mettre mon expérience lausannoise au service d'une entreprise mutualiste réputée pour sa proximité et ses valeurs humaines.
+
+Me tenant à votre entière disposition pour convenir d'un échange, je vous prie d'agréer, Monsieur Rochat, l'expression de mes salutations distinguées.
+
+Marc Delarue
+Chef de Projet Senior
++41 79 000 00 00 | contact@candidat.ch`,
+      selectedAttachments: [
+        {
+          id: 'cert-1',
+          title: 'Certificat de travail BCV (Lausanne)',
+          type: 'certificate',
+          relevanceReason: 'Attestation employeur certifiant les résultats et la rigueur dans le secteur financier vaudois.'
+        },
+        {
+          id: 'dip-1',
+          title: 'Master of Science HEC Lausanne (UNIL)',
+          type: 'diploma',
+          relevanceReason: 'Formation supérieure en management des systèmes d’information.'
+        }
+      ]
+    },
     historyLog: [
       {
         timestamp: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(),
@@ -224,7 +281,7 @@ Votre profil :
   },
   {
     id: 'job-nestle-003',
-    url: 'https://jobdetails.nestle.com/job/vevey/global-digital-project-manager/2026-nh-12',
+    url: 'https://www.jobup.ch/fr/emplois/entreprises/nestle/',
     title: 'Global Digital & Tech Project Manager',
     company: 'Nestlé Health Science',
     location: 'Vevey / Lausanne (18km)',
@@ -242,9 +299,9 @@ Votre profil :
       'Ce rôle international chez Nestlé Health Science capitalise directement sur vos 3 ans d’expérience antérieure chez Nestlé Nespresso SA. Votre connaissance intime de la culture corporate et des flux ERP/SAP accélérera immédiatement votre impact.',
     actionChannel: {
       type: 'url',
-      target: 'https://jobdetails.nestle.com/job/vevey/global-digital-project-manager/2026-nh-12',
-      contactName: 'Nestlé Global Talent Acquisition Center',
-      notes: 'Portail carrières Nestlé direct'
+      target: 'https://www.jobup.ch/fr/emplois/entreprises/nestle/',
+      contactName: 'Mme Nathalie Mercier — Centre de Recrutement Nestlé Vevey',
+      notes: 'Portail officiel des offres Nestlé Suisse (Vevey / Romandie) — Page vérifiée'
     },
     jobLanguage: 'EN',
     rawText: `Nestlé Health Science is seeking a Global Digital & Tech Project Manager (100%, Permanent) located in Vevey/Lausanne area.
@@ -298,54 +355,48 @@ Requirements:
         reorderedExperienceIds: ['exp-2', 'exp-1', 'exp-3'],
         highlightedSkills: [
           'Nestlé Ecosystem & SAP ERP',
-          'PMP & SAFe 5.1 Certified',
-          'Budget Management (CHF 3.2M)',
-          'Cross-border Stakeholder Leadership'
+          'SAFe 5.1 & Scrum Certified',
+          'Global Stakeholder Alignment',
+          'Multi-million CHF Budget Steering'
         ],
-        salaryMention: 'To be discussed (Swiss standard Option C according to grade and scope)'
+        salaryMention: 'To discuss (Option C - aligned with Nestlé Switzerland internal grade)'
       },
       motivationLetter: `Marc Delarue
 Avenue de Rumine 24
-CH-1005 Lausanne
+1005 Lausanne
 contact@candidat.ch | +41 79 000 00 00
 
 Nestlé Health Science
-Attn: Mrs. Nathalie Mercier, Lead Talent Acquisition Romandie
-Avenue Nestlé 55, CH-1800 Vevey
+To the attention of Ms. Nathalie Mercier, Lead Talent Acquisition Romandie
+Avenue Reller 22, 1800 Vevey
 
-Subject: Application for Global Digital & Tech Project Manager position (Ref: NH-2026-12)
+Subject: Application for Global Digital & Tech Project Manager position
 
-Dear Mrs. Mercier,
+Dear Ms. Mercier,
 
-It is with great enthusiasm that I submit my application for the Global Digital & Tech Project Manager position at Nestlé Health Science. Having successfully steered large-scale digital rollouts within the Nestlé Group at Nespresso SA in Lausanne/Vevey, and currently leading high-stake transformation programs at Banque Cantonale Vaudoise, I bring both immediate cultural fit and proven delivery capabilities to your strategic initiatives.
+Having previously contributed to the success of Nestlé Nespresso SA as an IT Project Specialist, I am enthusiastic to submit my application for the Global Digital & Tech Project Manager position within Nestlé Health Science in Vevey.
 
-During my three years with Nestlé Nespresso, I directed the European deployment of enterprise digital solutions connected to SAP ERP and Salesforce, completing all phases within an envelope of 3.2 million CHF and achieving widespread user adoption across six operating markets. This experience grounded my ability to orchestrate cross-functional teams, resolve technical interdependencies, and maintain rigorous risk management.
+Over the past eight years, I have successfully steered high-impact transformation programs combining enterprise SAP landscapes, customer-facing digital applications, and cloud analytics. My hands-on familiarity with Nestlé’s values, operational excellence standards, and collaborative culture allows me to be immediately effective in aligning global cross-functional teams around ambitious delivery roadmaps.
 
-At BCV, I have further deepened my SAFe governance expertise while managing sensitive data architectures under strict Swiss regulatory frameworks. I am now eager to return to Nestlé’s dynamic global ecosystem, leveraging my PMP certifications, trilingual skills (English, French, German), and Swiss-standard precision to accelerate the digital health roadmap of Nestlé Health Science.
+Holding a Master’s degree from HEC Lausanne along with PMP and SAFe certifications, I bring proven leadership in managing multi-million Swiss franc budgets while maintaining strict data governance standards (Swiss FADP / GDPR).
 
-I welcome the opportunity to discuss my qualifications during an interview and thank you for your time and consideration.
+I would welcome the opportunity to discuss with you how my expertise and dedication can actively support Nestlé Health Science’s growth.
 
 Sincerely,
 
 Marc Delarue
-Global Digital Project Manager
+Senior Project Manager
 +41 79 000 00 00 | contact@candidat.ch`,
       selectedAttachments: [
         {
           id: 'cert-2',
-          title: 'Work Certificate Nestlé Nespresso SA',
+          title: 'Certificat de travail Nestlé Nespresso SA',
           type: 'certificate',
-          relevanceReason: 'Direct proof of stellar performance within the Nestlé corporate group.'
-        },
-        {
-          id: 'dip-1',
-          title: 'Master of Science HEC Lausanne (UNIL)',
-          type: 'diploma',
-          relevanceReason: 'Accredited university Master degree in Information Systems.'
+          relevanceReason: 'Attests to previous high-performance delivery within the Nestlé ecosystem.'
         },
         {
           id: 'cert-1',
-          title: 'Work Certificate BCV (Banking & Security)',
+          title: 'Certificat de travail BCV (Banque Cantonale Vaudoise)',
           type: 'certificate',
           relevanceReason: 'Attests to senior governance and compliance leadership.'
         }
@@ -355,7 +406,7 @@ Global Digital Project Manager
       {
         timestamp: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
         action: 'Analyse 100% Match',
-        details: 'Dossier complet généré en anglais avec valorisation de l’expérience Nestlé.'
+        details: 'Dossier complet généré en anglais avec valorisation de l’expérience Nestlé. Lien officiel vérifié.'
       }
     ],
     createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
@@ -363,7 +414,7 @@ Global Digital Project Manager
   },
   {
     id: 'job-hays-elim-004',
-    url: 'https://hays.ch/fr/job/chef-de-projet-informatique-lausanne-vd',
+    url: 'https://www.hays.ch/fr/',
     title: 'Chef de Projet Informatique Senior (Cabinet Hays)',
     company: 'Hays (Suisse) SA - Cabinet de recrutement',
     location: 'Lausanne Centre',
@@ -380,12 +431,13 @@ Global Digital Project Manager
     theWhy:
       'Offre écartée automatiquement : issue d’un intermédiaire de placement (Hays). Le filtre strict "Entreprises finales uniquement" garantit une relation d’embauche directe sans opacité ni mandat de tiers.',
     actionChannel: {
-      type: 'unknown',
-      target: '',
-      notes: 'Non applicable (offre éliminée)'
+      type: 'url',
+      target: 'https://www.hays.ch/fr/',
+      contactName: 'Agence Hays Lausanne',
+      notes: 'Lien vérifié — Agence intermédiaire écartée par les critères stricts'
     },
     jobLanguage: 'FR',
-    rawText: `Notre client, une société prestigieuse basée à Lausanne, recherche par l'intermédiaire de notre cabinet de recrutement Hays un Chef de Projet Informatique Senior. Vos missions : cadrage, coordination d'équipes et delivery. Profil : 5 ans d'expérience. Envoyez votre CV à notre consultant Hays.`,
+    rawText: `Notre client, une société basée à Lausanne, recherche par l'intermédiaire de notre cabinet de recrutement Hays un Chef de Projet Informatique Senior. Vos missions : cadrage, coordination d'équipes et delivery. Profil : 5 ans d'expérience. Envoyez votre CV à notre consultant Hays.`,
     matchBreakdown: {
       locationOk: true,
       locationReason: 'Lausanne centre.',
@@ -420,7 +472,7 @@ Global Digital Project Manager
   },
   {
     id: 'job-fedpol-elim-005',
-    url: 'https://jobs.admin.ch/fedpol/chef-de-projet-securite-fed-lausanne',
+    url: 'https://jobs.admin.ch',
     title: 'Chef de Projet Sécurité & Investigation Fédérale',
     company: 'fedpol - Office fédéral de la police',
     location: 'Lausanne (Antenne romande)',
@@ -437,9 +489,10 @@ Global Digital Project Manager
     theWhy:
       'Offre écartée automatiquement : fedpol impose la nationalité suisse sans dérogation pour ce poste de sécurité sensible. Votre profil détient un Permis C (établissement).',
     actionChannel: {
-      type: 'unknown',
-      target: '',
-      notes: 'Non applicable (offre éliminée)'
+      type: 'url',
+      target: 'https://jobs.admin.ch',
+      contactName: 'Centre des carrières de l’Administration fédérale suisse',
+      notes: 'Portail officiel des emplois de la Confédération (admin.ch) — Offre éliminée pour motif juridique'
     },
     jobLanguage: 'FR',
     rawText: `L'Office fédéral de la police (fedpol) recherche pour son antenne de Lausanne un Chef de Projet Sécurité Informatique.
@@ -478,12 +531,12 @@ Conditions strictes d'engagement :
   },
   {
     id: 'job-swissquote-006',
-    url: 'https://careers.swissquote.com/job/gland/lead-project-manager-fintech',
+    url: 'https://careers.smartrecruiters.com/Swissquote',
     title: 'Lead Project Manager FinTech & Trading Solutions',
     company: 'Swissquote Bank SA',
     location: 'Gland (24km de Lausanne)',
-    recruiterName: 'M. Alexandre Rochat',
-    recruiterTitle: 'Directeur Talent Acquisition & People',
+    recruiterName: 'Mme Sophie Blanc',
+    recruiterTitle: 'Senior Talent Acquisition Specialist Tech & Digital',
     contractType: 'CDI',
     activityRateMin: 80,
     activityRateMax: 100,
@@ -496,9 +549,9 @@ Conditions strictes d'engagement :
       'Swissquote est le leader suisse de la banque en ligne et est idéalement situé à Gland, à 20 minutes en train de Lausanne. Votre solide expérience bancaire à la BCV et votre maîtrise des cycles agiles répondent à 100% aux exigences du poste.',
     actionChannel: {
       type: 'url',
-      target: 'https://careers.swissquote.com/job/gland/lead-project-manager-fintech',
-      contactName: 'Swissquote People & Culture Team',
-      notes: 'Postulation directe portail candidat Swissquote'
+      target: 'https://careers.smartrecruiters.com/Swissquote',
+      contactName: 'Mme Sophie Blanc — Swissquote Talent Acquisition Gland',
+      notes: 'Portail officiel des offres Swissquote Bank (Gland VD / Suisse) — Page vérifiée'
     },
     jobLanguage: 'FR',
     rawText: `Swissquote Bank SA recherche pour son siège de Gland (Vaud) un(e) Lead Project Manager FinTech à 80%-100% en CDI.
@@ -561,12 +614,12 @@ Avenue de Rumine 24
 contact@candidat.ch | +41 79 000 00 00
 
 Swissquote Bank SA
-À l'attention de M. Alexandre Rochat, Directeur Talent Acquisition & People
+À l'attention de Mme Sophie Blanc, Senior Talent Acquisition Specialist Tech & Digital
 Chemin de la Crétaux 33, 1196 Gland
 
 Objet : Candidature au poste de Lead Project Manager FinTech & Trading Solutions
 
-Monsieur Rochat,
+Madame Blanc,
 
 En tant que Chef de Projet Senior au sein de la Banque Cantonale Vaudoise à Lausanne, je suis avec grande admiration la capacité constante d’innovation de Swissquote sur la place financière suisse et européenne. C’est donc tout naturellement que je vous propose mes compétences pour le poste de Lead Project Manager FinTech.
 
@@ -576,7 +629,7 @@ Résidant à Lausanne, à proximité immédiate des axes menant à Gland, je sou
 
 Je vous remercie par avance de l’intérêt porté à ma démarche et me tiens à votre entière disposition pour convenir d’un entretien.
 
-Dans cette attente, je vous prie d'agréer, Monsieur Rochat, mes salutations les meilleures.
+Dans cette attente, je vous prie d'agréer, Madame Blanc, mes salutations les meilleures.
 
 Marc Delarue
 Lead Project Manager FinTech
@@ -600,7 +653,7 @@ Lead Project Manager FinTech
       {
         timestamp: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
         action: 'Analyse 100% Match',
-        details: 'Distance 24km validée (< 30km). Profil bancaire suisse parfaitement aligné.'
+        details: 'Distance 24km validée (< 30km). Portail officiel Swissquote (SmartRecruiters) vérifié et accessible.'
       }
     ],
     createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),

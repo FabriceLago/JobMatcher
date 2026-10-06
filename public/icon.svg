@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="swissRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+  
+  <!-- Outer Rounded Squircle -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#swissRed)" filter="url(#shadow)" />
+  
+  <!-- Outer Gold Laurel / Ring Accent -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#f59e0b" stroke-width="4" stroke-opacity="0.4" stroke-dasharray="8 6" />
+  
+  <!-- Swiss White Cross -->
+  <rect x="220" y="128" width="72" height="256" rx="8" fill="#ffffff" />
+  <rect x="128" y="220" width="256" height="72" rx="8" fill="#ffffff" />
+  
+  <!-- Target Center Pulse -->
+  <circle cx="256" cy="256" r="16" fill="#dc2626" />
+  <circle cx="256" cy="256" r="8" fill="#ffffff" />
+</svg>

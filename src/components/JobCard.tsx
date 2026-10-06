@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { JobOffer, JobStatus } from '../types';
+import { sanitizeUrl } from '../utils/security';
 
 interface JobCardProps {
   job: JobOffer;
@@ -171,6 +172,43 @@ export const JobCard: React.FC<JobCardProps> = ({
           </span>
         </div>
 
+        {/* Recruiter / HR Contact for Application & Cover Letter */}
+        {(job.recruiterName || job.actionChannel?.contactName) && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 bg-slate-100/90 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 mb-3">
+            <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1 text-[11px]">
+              👤 Destinataire RH :
+            </span>
+            <span className="font-medium text-slate-800 dark:text-slate-200 text-[11px]">
+              {job.recruiterName || job.actionChannel?.contactName}
+            </span>
+            {job.recruiterTitle && (
+              <span className="text-slate-500 dark:text-slate-400 text-[10px]">
+                ({job.recruiterTitle})
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Verified Real Career URL Indicator */}
+        {job.actionChannel?.target && !isEliminated && (
+          <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-md mb-3">
+            <span className="flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Offre officielle vérifiée & accessible
+            </span>
+            <a
+              href={sanitizeUrl(job.actionChannel.target)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-semibold text-emerald-800 dark:text-emerald-300 hover:underline cursor-pointer"
+              title="Tester et ouvrir la page officielle de l'employeur"
+            >
+              <span>Accéder</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+
         {/* Synthèse de Pertinence ("The Why") */}
         {job.theWhy && (
           <div className={`p-3 rounded-lg text-xs mb-3.5 ${
@@ -225,7 +263,7 @@ export const JobCard: React.FC<JobCardProps> = ({
           {/* Action Channel Button: 1-click apply */}
           {job.actionChannel?.target && !isEliminated && (
             <a
-              href={job.actionChannel.target}
+              href={sanitizeUrl(job.actionChannel.target)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-medium px-2.5 py-1.5 rounded-lg transition-colors shadow-xs cursor-pointer"

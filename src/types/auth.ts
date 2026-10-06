@@ -1,3 +1,15 @@
+export interface InvoiceReceipt {
+  id: string;
+  invoiceNumber: string;
+  date: string;
+  planName: string;
+  amountChf: number;
+  vatChf: number;
+  paymentMethod: 'stripe_card' | 'qr_bill_swiss';
+  status: 'paid' | 'pending';
+  receiptRef: string;
+}
+
 export interface UserAccount {
   id: string;
   email: string;
@@ -5,7 +17,8 @@ export interface UserAccount {
   createdAt: string;
   trialStartedAt: string;
   trialExpiresAt: string;
-  subscriptionPlan: 'free_trial' | 'pro_lausanne' | 'expired';
+  subscriptionPlan: 'free_trial' | 'standard_lausanne' | 'pro_lausanne' | 'expired';
+  invoices?: InvoiceReceipt[];
 }
 
 export interface AuthState {

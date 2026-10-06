@@ -16,9 +16,14 @@ import {
   Check,
   Edit3,
   Eye,
-  UserCheck
+  UserCheck,
+  Download,
+  Send,
+  FileDown
 } from 'lucide-react';
-import { JobOffer, UserProfile, TailoredDossier } from '../types';
+import { JobOffer, JobStatus, UserProfile, TailoredDossier } from '../types';
+import { pdfExportService } from '../services/pdfExportService';
+import { sanitizeUrl } from '../utils/security';
 
 interface DossierModalProps {
   job: JobOffer | null;
@@ -26,6 +31,7 @@ interface DossierModalProps {
   onClose: () => void;
   userProfile: UserProfile;
   onUpdateJobDossier: (jobId: string, updatedDossier: TailoredDossier) => void;
+  onUpdateJobStatus?: (jobId: string, newStatus: JobStatus) => void;
   onCopyNotice?: (text: string) => void;
 }
 
@@ -35,6 +41,7 @@ export const DossierModal: React.FC<DossierModalProps> = ({
   onClose,
   userProfile,
   onUpdateJobDossier,
+  onUpdateJobStatus,
   onCopyNotice
 }) => {
   const [activeTab, setActiveTab] = useState<'letter' | 'cv' | 'attachments'>('letter');
@@ -44,8 +51,11 @@ export const DossierModal: React.FC<DossierModalProps> = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [copiedLetter, setCopiedLetter] = useState(false);
   const [copiedCV, setCopiedCV] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [isEditingLetter, setIsEditingLetter] = useState(false);
   const [editableLetter, setEditableLetter] = useState(job?.tailoredDossier?.motivationLetter || '');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   // Recruiter and Candidate personalization state
   const [candidateName, setCandidateName] = useState(userProfile.fullName || 'Marc Delarue');
@@ -115,6 +125,17 @@ export const DossierModal: React.FC<DossierModalProps> = ({
     );
     if (salutationIndex !== -1) {
       lines[salutationIndex] = salutationGreeting;
+    }
+
+    // Rule 3b: Update closing sentence with the exact salutation formula (Swiss executive standard)
+    const salutationClean = salutationGreeting.replace(/,$/, '');
+    for (let i = 0; i < lines.length; i++) {
+      if (
+        lines[i].toLowerCase().includes("d'agréer") &&
+        (lines[i].toLowerCase().includes("salutations") || lines[i].toLowerCase().includes("considération"))
+      ) {
+        lines[i] = lines[i].replace(/d'agréer,[^,]+,/i, `d'agréer, ${salutationClean},`);
+      }
     }
 
     // Rule 4: Signature at bottom MUST be the applicant's name and surname from CV
@@ -221,6 +242,47 @@ export const DossierModal: React.FC<DossierModalProps> = ({
       onCopyNotice('Lettre modifiée enregistrée');
     }
   };
+
+  const handleDownloadLetterPdf = () => {
+    if (!job) return;
+    pdfExportService.generateMotivationLetterPdf(
+      job,
+      userProfile,
+      editableLetter || dossier?.motivationLetter || '',
+      recruiterName,
+      recruiterTitle,
+      candidateName
+    );
+    setDownloadSuccess('Lettre PDF générée');
+    setTimeout(() => setDownloadSuccess(null), 3000);
+    if (onCopyNotice) onCopyNotice('Lettre officielle suisse téléchargée en PDF !');
+  };
+
+  const handleDownloadCvPdf = () => {
+    if (!job) return;
+    pdfExportService.generateTailoredCvPdf(job, userProfile, candidateName);
+    setDownloadSuccess('CV PDF généré');
+    setTimeout(() => setDownloadSuccess(null), 3000);
+    if (onCopyNotice) onCopyNotice('CV adapté suisse téléchargé en PDF !');
+  };
+
+  const handleDownloadCompletePack = () => {
+    handleDownloadLetterPdf();
+    setTimeout(() => {
+      handleDownloadCvPdf();
+    }, 600);
+    if (onCopyNotice) onCopyNotice('Dossier complet (CV + Lettre) téléchargé !');
+  };
+
+  const handleMarkAsApplied = () => {
+    if (!job || !onUpdateJobStatus) return;
+    onUpdateJobStatus(job.id, 'applied');
+    if (onCopyNotice) onCopyNotice(`Candidature chez ${job.company} enregistrée comme « Postulé » !`);
+  };
+
+  const emailData = job
+    ? pdfExportService.openDirectEmailApplication(job, userProfile, candidateName)
+    : null;
 
   const handleApplyNamesToLetter = () => {
     const updated = applyPersonalizationToLetter(
@@ -342,11 +404,11 @@ export const DossierModal: React.FC<DossierModalProps> = ({
         </div>
 
         {/* Tab Sub-Header */}
-        <div className="px-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 text-xs">
-          <div className="flex items-center gap-4">
+        <div className="px-4 sm:px-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-900 text-xs gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 sm:pb-0">
             <button
               onClick={() => setActiveTab('letter')}
-              className={`py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2.5 sm:py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'letter'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -358,30 +420,30 @@ export const DossierModal: React.FC<DossierModalProps> = ({
 
             <button
               onClick={() => setActiveTab('cv')}
-              className={`py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2.5 sm:py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'cv'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>CV Ciblé & Expériences</span>
+              <span>CV Ciblé</span>
             </button>
 
             <button
               onClick={() => setActiveTab('attachments')}
-              className={`py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`py-2.5 sm:py-3 font-semibold border-b-2 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === 'attachments'
                   ? 'border-red-600 text-red-600 dark:text-red-400'
                   : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Paperclip className="w-3.5 h-3.5" />
-              <span>Pièces Jointes Suisses ({dossier?.selectedAttachments?.length || 0})</span>
+              <span>Pièces Jointes ({dossier?.selectedAttachments?.length || 0})</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5 py-2">
+          <div className="flex items-center gap-1.5 py-1.5 sm:py-2 self-end sm:self-auto">
             {activeTab === 'letter' && (
               <button
                 onClick={() => {
@@ -422,6 +484,46 @@ export const DossierModal: React.FC<DossierModalProps> = ({
                   <span>Copier</span>
                 </>
               )}
+            </button>
+
+            {/* Direct PDF Download Buttons */}
+            {activeTab === 'letter' ? (
+              <button
+                onClick={handleDownloadLetterPdf}
+                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-semibold flex items-center gap-1 text-[11px] transition-colors cursor-pointer shadow-xs"
+                title="Télécharger la lettre officielle au format PDF suisse"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PDF Lettre</span>
+              </button>
+            ) : activeTab === 'cv' ? (
+              <button
+                onClick={handleDownloadCvPdf}
+                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-semibold flex items-center gap-1 text-[11px] transition-colors cursor-pointer shadow-xs"
+                title="Télécharger le CV adapté au format PDF suisse"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>PDF CV</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleDownloadCompletePack}
+                className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-semibold flex items-center gap-1 text-[11px] transition-colors cursor-pointer shadow-xs"
+                title="Télécharger le pack complet (CV + Lettre)"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Pack PDF</span>
+              </button>
+            )}
+
+            {/* Direct Email Modal Trigger */}
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="px-2.5 py-1 rounded bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 font-semibold flex items-center gap-1 text-[11px] transition-colors cursor-pointer"
+              title="Préparer et transmettre par email de candidature"
+            >
+              <Mail className="w-3.5 h-3.5 text-blue-400" />
+              <span>Email RH</span>
             </button>
 
             <button
@@ -491,6 +593,61 @@ export const DossierModal: React.FC<DossierModalProps> = ({
                         placeholder="Ex: Responsable Recrutement RH"
                         className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-red-500"
                       />
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {job.recruiterName && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRecruiterName(job.recruiterName!);
+                              setRecruiterTitle(job.recruiterTitle || 'Responsable Recrutement RH');
+                              const updated = applyPersonalizationToLetter(
+                                editableLetter || dossier?.motivationLetter || '',
+                                candidateName,
+                                job.recruiterName!,
+                                job.recruiterTitle || 'Responsable Recrutement RH'
+                              );
+                              setEditableLetter(updated);
+                            }}
+                            className="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 cursor-pointer font-medium"
+                          >
+                            👤 {job.recruiterName}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRecruiterName('Direction des Ressources Humaines');
+                            setRecruiterTitle(job.company);
+                            const updated = applyPersonalizationToLetter(
+                              editableLetter || dossier?.motivationLetter || '',
+                              candidateName,
+                              'Direction des Ressources Humaines',
+                              job.company
+                            );
+                            setEditableLetter(updated);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 cursor-pointer"
+                        >
+                          🏢 Direction RH
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRecruiterName('Service Recrutement & Talents RH');
+                            setRecruiterTitle('');
+                            const updated = applyPersonalizationToLetter(
+                              editableLetter || dossier?.motivationLetter || '',
+                              candidateName,
+                              'Service Recrutement & Talents RH',
+                              ''
+                            );
+                            setEditableLetter(updated);
+                          }}
+                          className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 cursor-pointer"
+                        >
+                          📋 Service Recrutement
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -711,38 +868,153 @@ export const DossierModal: React.FC<DossierModalProps> = ({
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/60">
           <div className="text-xs text-slate-500">
             Dossier généré · Langue : {selectedLanguage}
+            {downloadSuccess && (
+              <span className="ml-2 text-emerald-600 dark:text-emerald-400 font-semibold animate-pulse">
+                ✓ {downloadSuccess}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {job.actionChannel?.target && (
-              <a
-                href={job.actionChannel.target}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadCompletePack}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+              title="Télécharger à la fois la lettre et le CV en PDF officiel suisse"
+            >
+              <FileDown className="w-4 h-4 text-red-400" />
+              <span>Télécharger le Pack (CV + Lettre)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowEmailModal(true)}
+              className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-red-950/40 cursor-pointer"
+              title="Préparer et transmettre l'email de candidature direct"
+            >
+              <Send className="w-4 h-4" />
+              <span>Transmettre Candidature</span>
+            </button>
+
+            {job.status !== 'applied' ? (
+              <button
+                type="button"
+                onClick={handleMarkAsApplied}
+                className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Passer cette offre au statut « Postulé » et horodater"
               >
-                {job.actionChannel.type === 'email' ? (
-                  <>
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Envoyer email RH</span>
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Postuler directement</span>
-                  </>
-                )}
-              </a>
+                <Check className="w-4 h-4" />
+                <span>Marquer Postulé</span>
+              </button>
+            ) : (
+              <span className="px-3 py-2 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs font-bold flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <span>Candidature Postulée</span>
+              </span>
             )}
+
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             >
               Fermer
             </button>
           </div>
         </div>
       </div>
+
+      {/* Modal: Direct Email Transmission */}
+      {showEmailModal && emailData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 bg-blue-950 text-blue-300 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-blue-800 mb-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Transmission Email Standard Suisse</span>
+                </div>
+                <h3 className="text-lg font-bold text-white">Transmettre ma Candidature</h3>
+                <p className="text-xs text-slate-400">
+                  {job.company} • {job.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl bg-slate-800 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Destinataire RH :</label>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono">
+                  {emailData.targetEmail}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Objet du courriel :</label>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-semibold">
+                  {emailData.subject}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1 font-semibold">Message de transmission :</label>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-300 whitespace-pre-line max-h-48 overflow-y-auto leading-relaxed">
+                  {emailData.body}
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1 text-emerald-400 font-medium">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>Pièces jointes préconisées : CV + Lettre en PDF</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDownloadCompletePack}
+                  className="text-red-400 hover:underline font-semibold cursor-pointer"
+                >
+                  Télécharger les 2 PDF
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`Destinataire: ${emailData.targetEmail}\nObjet: ${emailData.subject}\n\n${emailData.body}`);
+                  setCopiedEmail(true);
+                  setTimeout(() => setCopiedEmail(false), 2500);
+                  if (onCopyNotice) onCopyNotice('Texte du mail copié dans le presse-papier !');
+                }}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-slate-700"
+              >
+                {copiedEmail ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copiedEmail ? 'Email Copié !' : 'Copier l\'Email'}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={sanitizeUrl(emailData.mailtoUrl)}
+                  onClick={() => {
+                    handleMarkAsApplied();
+                    setShowEmailModal(false);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-red-950/50 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Ouvrir ma Messagerie (mailto)</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -11,10 +11,18 @@ import { VideoGuideModal } from './components/VideoGuideModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { LoginPage } from './components/LoginPage';
 import { TrialModal } from './components/TrialModal';
+import { ExportProjectModal } from './components/ExportProjectModal';
+import { JobRadarView } from './components/JobRadarView';
+import { InterviewCoachView } from './components/InterviewCoachView';
+import { OrpJournalView } from './components/OrpJournalView';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { firestoreSyncService } from './services/firestoreSyncService';
+import { logOutFirebase, subscribeToAuthState } from './firebase';
 import { JobOffer, JobStatus, UserProfile, TailoredDossier } from './types';
 import { UserAccount } from './types/auth';
 import { defaultUserProfile } from './data/defaultProfile';
 import { initialMockJobs } from './data/mockJobs';
+import { useTheme } from './hooks/useTheme';
 import { CheckCircle2, Info, AlertTriangle, X } from 'lucide-react';
 
 interface Toast {
@@ -24,6 +32,9 @@ interface Toast {
 }
 
 export default function App() {
+  // Initialize system preference matchMedia & theme synchronization
+  useTheme();
+
   // Local storage initialization with automated sanitizer
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
@@ -56,7 +67,7 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'analyzer' | 'optionB' | 'dossier' | 'report' | 'profile'
+    'dashboard' | 'analyzer' | 'radar' | 'optionB' | 'dossier' | 'report' | 'profile' | 'coaching' | 'orp'
   >('dashboard');
 
   // Authentication & 7-Day Free Trial State
@@ -86,14 +97,20 @@ export default function App() {
   });
   const [selectedJobForDossier, setSelectedJobForDossier] = useState<JobOffer | null>(null);
   const [isDossierModalOpen, setIsDossierModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
     setToast({ id: Date.now(), message, type });
   };
 
-  const handleLoginSuccess = (account: UserAccount) => {
+  const handleLoginSuccess = async (account: UserAccount) => {
     setCurrentUser(account);
+    try {
+      await firestoreSyncService.saveUserAccount(account);
+    } catch (e) {
+      console.warn('Sync account error:', e);
+    }
     if (account.fullName && !userProfile.fullName) {
       setUserProfile(prev => ({
         ...prev,
@@ -104,13 +121,18 @@ export default function App() {
     showToast(`Bienvenue ${account.fullName || ''} ! Vos 7 jours d'essai gratuit sont activés.`, 'success');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logOutFirebase();
+    } catch (e) {
+      console.warn('Firebase logout notice:', e);
+    }
     localStorage.removeItem('lausanne_job_matcher_auth_account');
     setCurrentUser(null);
     showToast('Vous êtes déconnecté', 'info');
   };
 
-  const handleExtendTrial = () => {
+  const handleExtendTrial = async () => {
     if (!currentUser) return;
     const currentExpiry = new Date(currentUser.trialExpiresAt).getTime();
     const newExpiry = new Date(Math.max(Date.now(), currentExpiry) + 7 * 24 * 60 * 60 * 1000);
@@ -121,8 +143,71 @@ export default function App() {
     };
     setCurrentUser(updatedAccount);
     localStorage.setItem('lausanne_job_matcher_auth_account', JSON.stringify(updatedAccount));
+    try {
+      await firestoreSyncService.saveUserAccount(updatedAccount);
+    } catch (e) {
+      console.warn('Account sync notice:', e);
+    }
     showToast('Votre essai gratuit a été prolongé de 7 jours supplémentaires !', 'success');
   };
+
+  // Firebase Auth State Listener (Automatic Session Persistence & Multi-Tenant Restore)
+  useEffect(() => {
+    const unsub = subscribeToAuthState(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const existingAccount = await firestoreSyncService.getUserAccount(firebaseUser.uid);
+          if (existingAccount) {
+            setCurrentUser(existingAccount);
+            localStorage.setItem('lausanne_job_matcher_auth_account', JSON.stringify(existingAccount));
+          } else {
+            const now = new Date();
+            const expiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const newAccount: UserAccount = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              fullName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Candidat Vaudois',
+              createdAt: now.toISOString(),
+              trialStartedAt: now.toISOString(),
+              trialExpiresAt: expiry.toISOString(),
+              subscriptionPlan: 'free_trial'
+            };
+            await firestoreSyncService.saveUserAccount(newAccount);
+            setCurrentUser(newAccount);
+            localStorage.setItem('lausanne_job_matcher_auth_account', JSON.stringify(newAccount));
+          }
+        } catch (authSyncErr) {
+          console.warn('Auth state sync notice:', authSyncErr);
+        }
+      }
+    });
+
+    return () => unsub();
+  }, []);
+
+  // Realtime Cloud Firestore Sync for Multi-Tenant Architecture
+  useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
+
+    // 1. Initial fetch & real-time listener for User Profile
+    const unsubProfile = firestoreSyncService.subscribeToProfile(currentUser.id, cloudProfile => {
+      if (cloudProfile && cloudProfile.fullName) {
+        setUserProfile(cloudProfile);
+      }
+    });
+
+    // 2. Initial fetch & real-time listener for User Jobs pipeline
+    const unsubJobs = firestoreSyncService.subscribeToJobs(currentUser.id, cloudJobs => {
+      if (cloudJobs && cloudJobs.length > 0) {
+        setJobs(cloudJobs);
+      }
+    });
+
+    return () => {
+      unsubProfile();
+      unsubJobs();
+    };
+  }, [currentUser]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -133,22 +218,30 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Sync to local storage
+  // Sync to local storage & Cloud Firestore
   useEffect(() => {
     try {
       localStorage.setItem('lausanne_job_matcher_profile_v2', JSON.stringify(userProfile));
+      if (currentUser?.id) {
+        firestoreSyncService.saveUserProfile(currentUser.id, userProfile);
+      }
     } catch (e) {
-      console.warn('LocalStorage error:', e);
+      console.warn('Storage sync error:', e);
     }
-  }, [userProfile]);
+  }, [userProfile, currentUser]);
 
   useEffect(() => {
     try {
       localStorage.setItem('lausanne_job_matcher_jobs_v2', JSON.stringify(jobs));
+      if (currentUser?.id) {
+        jobs.forEach(job => {
+          firestoreSyncService.saveJobOffer(currentUser.id, job);
+        });
+      }
     } catch (e) {
-      console.warn('LocalStorage error:', e);
+      console.warn('Jobs storage error:', e);
     }
-  }, [jobs]);
+  }, [jobs, currentUser]);
 
   // Handler: Update Job Status
   const handleUpdateStatus = (jobId: string, newStatus: JobStatus) => {
@@ -188,6 +281,9 @@ export default function App() {
   // Handler: Delete Job
   const handleDeleteJob = (jobId: string) => {
     setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+    if (currentUser?.id) {
+      firestoreSyncService.deleteJobOffer(currentUser.id, jobId);
+    }
     if (selectedJobForDossier?.id === jobId) {
       setSelectedJobForDossier(null);
       setIsDossierModalOpen(false);
@@ -320,6 +416,49 @@ export default function App() {
     showToast('Compétence retirée de la mémoire permanente', 'info');
   };
 
+  // Handler: Add AI Suggested Keyword to Master Profile
+  const handleAddKeywordToProfile = (skillName: string, category: string, reason?: string) => {
+    const trimmed = skillName.trim();
+    if (!trimmed) return;
+
+    const alreadyLearned = userProfile.learnedSkills.some(
+      s => s.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    const inProfileTools = userProfile.skills.tools.some(t => t.toLowerCase() === trimmed.toLowerCase());
+    const inProfileMethod = userProfile.skills.methodologies.some(m => m.toLowerCase() === trimmed.toLowerCase());
+
+    if (alreadyLearned || inProfileTools || inProfileMethod) {
+      showToast(`Le mot-clé « ${trimmed} » figure déjà dans votre profil.`, 'info');
+      return;
+    }
+
+    const newLearnedSkill = {
+      id: `learn-ai-${Date.now()}`,
+      name: trimmed,
+      category: category || 'methodology',
+      addedFromJobId: 'ai-dashboard-gap',
+      addedFromJobTitle: 'Analyseur IA de Mots-Clés',
+      dateAdded: new Date().toISOString().split('T')[0],
+      notes: reason || 'Ajouté via suggestion IA du Tableau de Bord',
+    };
+
+    const updatedProfile: UserProfile = {
+      ...userProfile,
+      learnedSkills: [newLearnedSkill, ...userProfile.learnedSkills],
+      skills: {
+        ...userProfile.skills,
+        methodologies: category === 'methodology' ? [...userProfile.skills.methodologies, trimmed] : userProfile.skills.methodologies,
+        tools: category !== 'methodology' ? [...userProfile.skills.tools, trimmed] : userProfile.skills.tools,
+      }
+    };
+
+    setUserProfile(updatedProfile);
+    if (currentUser?.id) {
+      firestoreSyncService.saveUserProfile(currentUser.id, updatedProfile);
+    }
+    showToast(`✓ Mot-clé « ${trimmed} » ajouté avec succès à votre profil maître !`, 'success');
+  };
+
   // Handler: Reset demo data
   const handleResetDemoData = () => {
     setJobs(initialMockJobs);
@@ -332,7 +471,7 @@ export default function App() {
   // If not authenticated, display full LoginPage with 7-Day Free Trial
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-red-500 selection:text-white relative">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-red-500 selection:text-white relative transition-colors duration-200">
         {toast && (
           <div className="fixed bottom-5 right-5 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
             <div
@@ -376,6 +515,7 @@ export default function App() {
         onOpenVideoGuide={() => setIsVideoGuideOpen(true)}
         onOpenWelcome={() => setIsWelcomeModalOpen(true)}
         onOpenTrialModal={() => setIsTrialModalOpen(true)}
+        onOpenExportProject={() => setIsExportModalOpen(true)}
         onLogout={handleLogout}
       />
 
@@ -387,6 +527,7 @@ export default function App() {
             userProfile={userProfile}
             currentUser={currentUser}
             onOpenNewOffer={() => setIsAnalyzeModalOpen(true)}
+            onNavigateRadar={() => setActiveTab('radar')}
             onOpenUploadCV={() => setIsUploadCVModalOpen(true)}
             onOpenVideoGuide={() => setIsVideoGuideOpen(true)}
             onOpenWelcome={() => setIsWelcomeModalOpen(true)}
@@ -396,7 +537,31 @@ export default function App() {
             onUpdateStatus={handleUpdateStatus}
             onDeleteJob={handleDeleteJob}
             onResetDemoData={handleResetDemoData}
+            onAddSkillToProfile={handleAddKeywordToProfile}
             onCopyNotice={msg => showToast(msg, 'info')}
+          />
+        )}
+
+        {activeTab === 'radar' && (
+          <JobRadarView
+            userProfile={userProfile}
+            existingJobs={jobs}
+            onIngestJob={job => {
+              setJobs(prev => [job, ...prev]);
+              if (currentUser?.id) {
+                firestoreSyncService.saveJobOffer(currentUser.id, job);
+              }
+              showToast(`Offre « ${job.title} » ingérée avec succès dans votre pipeline !`, 'success');
+            }}
+            onIngestAndOpenDossier={job => {
+              setJobs(prev => [job, ...prev]);
+              if (currentUser?.id) {
+                firestoreSyncService.saveJobOffer(currentUser.id, job);
+              }
+              setSelectedJobForDossier(job);
+              setIsDossierModalOpen(true);
+              showToast(`Offre « ${job.title} » ingérée ! Préparation du dossier en cours.`, 'success');
+            }}
           />
         )}
 
@@ -412,7 +577,31 @@ export default function App() {
         )}
 
         {activeTab === 'report' && (
-          <DailyReportModal jobs={jobs} onOpenDossier={handleOpenDossier} />
+          <DailyReportModal
+            jobs={jobs}
+            userProfile={userProfile}
+            onOpenDossier={handleOpenDossier}
+            onUpdateJobStatus={handleUpdateStatus}
+            onCopyNotice={msg => showToast(msg, 'info')}
+          />
+        )}
+
+        {activeTab === 'coaching' && (
+          <InterviewCoachView
+            jobs={jobs}
+            userProfile={userProfile}
+            onOpenDossier={handleOpenDossier}
+            onCopyNotice={msg => showToast(msg, 'info')}
+          />
+        )}
+
+        {activeTab === 'orp' && (
+          <OrpJournalView
+            jobs={jobs}
+            userProfile={userProfile}
+            onOpenDossier={handleOpenDossier}
+            onCopyNotice={msg => showToast(msg, 'info')}
+          />
         )}
 
         {activeTab === 'profile' && (
@@ -426,6 +615,9 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Offline Connectivity Indicator */}
+      <OfflineIndicator />
 
       {/* Toast Notification Container */}
       {toast && (
@@ -482,6 +674,7 @@ export default function App() {
         }}
         userProfile={userProfile}
         onUpdateJobDossier={handleUpdateJobDossier}
+        onUpdateJobStatus={handleUpdateStatus}
         onCopyNotice={msg => showToast(msg, 'info')}
       />
 
@@ -506,9 +699,28 @@ export default function App() {
           isOpen={isTrialModalOpen}
           onClose={() => setIsTrialModalOpen(false)}
           currentUser={currentUser}
+          userProfile={userProfile}
           onExtendTrial={handleExtendTrial}
+          onUpgradePlan={newPlan => {
+            const updatedUser: UserAccount = {
+              ...currentUser,
+              subscriptionPlan: newPlan
+            };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('lausanne_job_matcher_auth_account', JSON.stringify(updatedUser));
+            if (currentUser.id) {
+              firestoreSyncService.saveUserAccount(updatedUser);
+            }
+            showToast(`Abonnement ${newPlan === 'pro_lausanne' ? 'Pro' : 'Standard'} activé avec succès !`, 'success');
+          }}
         />
       )}
+
+      <ExportProjectModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onCopyNotice={msg => showToast(msg, 'info')}
+      />
     </div>
   );
 }

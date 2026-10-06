@@ -13,17 +13,20 @@ import {
   ArrowUpDown,
   Upload,
   FileText,
-  Play
+  Play,
+  Radar
 } from 'lucide-react';
 import { JobOffer, JobStatus, UserProfile } from '../types';
 import { UserAccount } from '../types/auth';
 import { JobCard } from './JobCard';
+import { AIKeywordSuggester } from './AIKeywordSuggester';
 
 interface DashboardViewProps {
   jobs: JobOffer[];
   userProfile: UserProfile;
   currentUser?: UserAccount;
   onOpenNewOffer: () => void;
+  onNavigateRadar?: () => void;
   onOpenUploadCV?: () => void;
   onOpenVideoGuide?: () => void;
   onOpenWelcome?: () => void;
@@ -33,6 +36,7 @@ interface DashboardViewProps {
   onUpdateStatus: (jobId: string, newStatus: JobStatus) => void;
   onDeleteJob: (jobId: string) => void;
   onResetDemoData: () => void;
+  onAddSkillToProfile?: (skillName: string, category: string, reason?: string) => void;
   onCopyNotice?: (text: string) => void;
 }
 
@@ -41,6 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   userProfile,
   currentUser,
   onOpenNewOffer,
+  onNavigateRadar,
   onOpenUploadCV,
   onOpenVideoGuide,
   onOpenWelcome,
@@ -50,6 +55,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onUpdateStatus,
   onDeleteJob,
   onResetDemoData,
+  onAddSkillToProfile,
   onCopyNotice
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'ready' | 'optionB' | 'applied' | 'rejected'>('all');
@@ -183,12 +189,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span>Vidéo Démo (2 min)</span>
               </button>
             )}
+            {onNavigateRadar && (
+              <button
+                onClick={onNavigateRadar}
+                className="bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
+                title="Détecter automatiquement des offres d'entreprises directes en Romandie"
+              >
+                <Radar className="w-4 h-4 text-white" />
+                <span>Radar d'Offres Directes</span>
+              </button>
+            )}
             <button
               onClick={onOpenNewOffer}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-emerald-200" />
-              <span>Analyser une offre</span>
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Coller une offre</span>
             </button>
             <button
               onClick={onResetDemoData}
@@ -288,6 +304,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="text-[11px] text-slate-500 mt-1">Cabinets, hors-zone, juridique</p>
         </div>
       </div>
+
+      {/* AI Missing Keyword & Competency Gap Suggester */}
+      <AIKeywordSuggester
+        userProfile={userProfile}
+        jobs={jobs}
+        onAddSkillToProfile={onAddSkillToProfile || (() => {})}
+        onCopyNotice={onCopyNotice}
+      />
 
       {/* Filter Bar, Sort & Search */}
       <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">

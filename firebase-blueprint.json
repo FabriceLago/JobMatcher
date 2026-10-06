@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents an authenticated user account in Job Matcher",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "fullName": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "trialExpiresAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Master candidate profile including extracted CV, skills and Swiss preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "fullName": { "type": "string", "maxLength": 128 },
+        "jobTitle": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "city": { "type": "string", "maxLength": 64 },
+        "canton": { "type": "string", "maxLength": 16 },
+        "nationalityStatus": { "type": "string", "maxLength": 32 },
+        "activityRateMin": { "type": "number" },
+        "activityRateMax": { "type": "number" },
+        "yearsOfExperience": { "type": "number" },
+        "salaryPosture": { "type": "string", "maxLength": 256 },
+        "summary": { "type": "string", "maxLength": 2048 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "fullName"]
+    },
+    "UserJob": {
+      "title": "UserJob",
+      "description": "A job opportunity tracked within the user's personal pipeline",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "url": { "type": "string", "maxLength": 1024 },
+        "title": { "type": "string", "maxLength": 256 },
+        "company": { "type": "string", "maxLength": 256 },
+        "location": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "maxLength": 32 },
+        "matchScore": { "type": "number" },
+        "isEliminated": { "type": "boolean" },
+        "theWhy": { "type": "string", "maxLength": 1024 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "company", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account information and profile metadata"
+    },
+    "/users/{userId}/profiles/{profileId}": {
+      "schema": "UserProfile",
+      "description": "Isolated candidate master profile data and CV"
+    },
+    "/users/{userId}/jobs/{jobId}": {
+      "schema": "UserJob",
+      "description": "Personalized pipeline of job offers for this candidate"
+    }
+  }
+}

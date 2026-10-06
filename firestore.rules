@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Default-Deny Catch-All (Safety Net)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Security Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 2. Users Collection & Subcollections (Strict Tenant Isolation)
+    match /users/{userId} {
+      // Individual user document
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create, update: if isOwner(userId) && isValidId(userId);
+      allow delete: if isOwner(userId) && isValidId(userId);
+      // Forbid enumeration of all users
+      allow list: if false;
+
+      // Isolated Master Profile (CV & Candidate data)
+      match /profiles/{profileId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(profileId);
+      }
+
+      // User's Personal Jobs & Applications Pipeline
+      match /jobs/{jobId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(jobId);
+      }
+
+      // User's Daily Reports (8h00 morning ritual)
+      match /dailyReports/{reportId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(reportId);
+      }
+
+      // User's ORP Job Search Proofs (LACI Vaud compliance)
+      match /orpEntries/{entryId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(entryId);
+      }
+
+      // User's Subscription Invoices & Tax Receipts
+      match /invoices/{invoiceId} {
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) && isValidId(invoiceId);
+      }
+    }
+
+    // 3. Test Connection Document for Initial Boot Verification
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
